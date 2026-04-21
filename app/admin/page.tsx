@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import UploadForm from './upload-form'
 import ArtworkList from './artwork-list'
@@ -18,11 +19,19 @@ export default async function AdminPage() {
           <h1 className="text-white text-2xl font-light tracking-tight">Admin</h1>
           <p className="text-white/40 text-xs tracking-[0.2em] uppercase mt-1">Manage portfolio</p>
         </div>
-        <form action={logout}>
-          <button className="text-white/60 text-xs tracking-[0.2em] uppercase hover:text-white transition-colors">
-            Log out
-          </button>
-        </form>
+        <div className="flex items-center gap-5">
+          <Link
+            href="/admin/settings"
+            className="text-white/60 text-xs tracking-[0.2em] uppercase hover:text-white transition-colors"
+          >
+            Settings
+          </Link>
+          <form action={logout}>
+            <button className="text-white/60 text-xs tracking-[0.2em] uppercase hover:text-white transition-colors">
+              Log out
+            </button>
+          </form>
+        </div>
       </div>
 
       <section className="mb-20">
