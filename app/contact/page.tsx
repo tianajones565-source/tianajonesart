@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { getSettings } from '@/lib/settings'
 
 export default async function Contact() {
@@ -44,6 +45,16 @@ export default async function Contact() {
           {!contact.email && !contact.instagram && (
             <p className="text-white/40 text-sm">Contact details coming soon.</p>
           )}
+        </div>
+
+        <div className="mt-12 pt-8 border-t border-white/10">
+          <p className="text-white/40 text-[10px] tracking-[0.25em] uppercase mb-2">Commissions</p>
+          <Link
+            href="/commissions"
+            className="text-white text-sm md:text-base hover:text-white/70 transition-colors"
+          >
+            Request a custom piece →
+          </Link>
         </div>
       </div>
     </main>

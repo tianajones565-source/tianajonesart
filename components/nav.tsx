@@ -10,7 +10,7 @@ export default function Nav() {
         Tiana Jones
       </Link>
       <div className="flex items-center gap-6 md:gap-10">
-        {['Work', 'About', 'Contact'].map((item) => (
+        {['Work', 'About', 'Commissions', 'Contact'].map((item) => (
           <Link
             key={item}
             href={`/${item.toLowerCase()}`}
