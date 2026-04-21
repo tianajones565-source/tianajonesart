@@ -3,13 +3,16 @@
 import { createClient } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/email'
 import { getSettings } from '@/lib/settings'
+import { scoreCommission } from '@/lib/scam-filter'
 
 type SubmitInput = {
   name: string
   email: string
+  country: string
   budget: string
   timeline: string
   details: string
+  acknowledged: boolean
   honeypot: string
 }
 
@@ -27,15 +30,23 @@ export async function submitCommission(
 
   const name = input.name.trim()
   const email = input.email.trim()
+  const country = input.country.trim()
   const details = input.details.trim()
   const budget = input.budget.trim()
   const timeline = input.timeline.trim()
 
   if (!name) return { error: 'Name is required' }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Valid email required' }
+  if (!country) return { error: 'Country/region is required' }
   if (details.length < 20) {
     return { error: 'Please add a bit more detail (at least 20 characters)' }
   }
+  if (!input.acknowledged) {
+    return { error: 'Please acknowledge the commission terms' }
+  }
+
+  const scanText = [name, email, country, budget, timeline, details].join('\n')
+  const { flags, score } = scoreCommission(scanText)
 
   const supabase = await createClient()
   const { data: row, error: insertError } = await supabase
@@ -43,9 +54,12 @@ export async function submitCommission(
     .insert({
       name,
       email,
+      country,
       budget: budget || null,
       timeline: timeline || null,
       details,
+      scam_flags: flags,
+      scam_score: score,
     })
     .select('id')
     .single()
@@ -60,10 +74,22 @@ export async function submitCommission(
     return { success: true }
   }
 
+  const flagsHtml =
+    flags.length > 0
+      ? `<div style="background: #fff4ec; border-left: 4px solid #c45a1a; padding: 12px 16px; margin: 16px 0; border-radius: 4px;">
+          <p style="margin: 0 0 8px; font-weight: 600; color: #7a2e05;">Scam signals detected (score ${score}):</p>
+          <ul style="margin: 0; padding-left: 20px; color: #7a2e05;">
+            ${flags.map((f) => `<li>${escape(f.label)} — ${f.severity}</li>`).join('')}
+          </ul>
+        </div>`
+      : ''
+
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111; line-height: 1.6;">
       <h2 style="margin: 0 0 16px; font-weight: 500;">New commission inquiry</h2>
+      ${flagsHtml}
       <p style="margin: 0 0 8px;"><strong>From:</strong> ${escape(name)} &lt;${escape(email)}&gt;</p>
+      <p style="margin: 0 0 8px;"><strong>Country:</strong> ${escape(country)}</p>
       ${budget ? `<p style="margin: 0 0 8px;"><strong>Budget:</strong> ${escape(budget)}</p>` : ''}
       ${timeline ? `<p style="margin: 0 0 8px;"><strong>Timeline:</strong> ${escape(timeline)}</p>` : ''}
       <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0;" />
@@ -73,7 +99,7 @@ export async function submitCommission(
 
   const emailResult = await sendEmail({
     to,
-    subject: `Commission inquiry from ${name}`,
+    subject: `${flags.some((f) => f.severity === 'high') ? '[Flagged] ' : ''}Commission inquiry from ${name}`,
     html,
     replyTo: email,
   })

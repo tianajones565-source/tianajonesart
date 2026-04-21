@@ -6,9 +6,11 @@ import { submitCommission } from './actions'
 export default function CommissionForm() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [country, setCountry] = useState('')
   const [budget, setBudget] = useState('')
   const [timeline, setTimeline] = useState('')
   const [details, setDetails] = useState('')
+  const [acknowledged, setAcknowledged] = useState(false)
   const [honeypot, setHoneypot] = useState('')
   const [pending, setPending] = useState(false)
   const [state, setState] = useState<{ error?: string; success?: boolean }>({})
@@ -20,9 +22,11 @@ export default function CommissionForm() {
     const result = await submitCommission({
       name,
       email,
+      country,
       budget,
       timeline,
       details,
+      acknowledged,
       honeypot,
     })
     setPending(false)
@@ -30,9 +34,11 @@ export default function CommissionForm() {
     if (result.success) {
       setName('')
       setEmail('')
+      setCountry('')
       setBudget('')
       setTimeline('')
       setDetails('')
+      setAcknowledged(false)
     }
   }
 
@@ -59,7 +65,6 @@ export default function CommissionForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Honeypot: hidden from users, bots will fill it */}
       <div className="hidden" aria-hidden="true">
         <label>
           Leave this blank
@@ -91,6 +96,18 @@ export default function CommissionForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          className={inputClass}
+        />
+      </div>
+
+      <div>
+        <label className={labelClass}>Country / region</label>
+        <input
+          type="text"
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          required
+          placeholder="e.g. United States"
           className={inputClass}
         />
       </div>
@@ -130,11 +147,26 @@ export default function CommissionForm() {
         />
       </div>
 
+      <label className="flex items-start gap-3 cursor-pointer pt-2">
+        <input
+          type="checkbox"
+          checked={acknowledged}
+          onChange={(e) => setAcknowledged(e.target.checked)}
+          required
+          className="mt-1 accent-white"
+        />
+        <span className="text-white/70 text-xs leading-relaxed">
+          I&rsquo;ve read the commission terms above. I understand payment is via Stripe
+          (no checks or money orders), there is no overpayment or third-party shipping,
+          and work begins after the deposit clears.
+        </span>
+      </label>
+
       {state.error && <p className="text-red-400/80 text-xs">{state.error}</p>}
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || !acknowledged}
         className="w-full bg-white text-black py-3 text-xs tracking-[0.25em] uppercase font-medium hover:bg-white/90 disabled:opacity-50 transition-opacity"
       >
         {pending ? 'Sending…' : 'Send inquiry'}
