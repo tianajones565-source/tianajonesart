@@ -4,10 +4,19 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
-export async function uploadArtwork(
-  _prevState: { error?: string; success?: boolean } | undefined,
-  formData: FormData
-) {
+type SaveArtworkInput = {
+  title: string
+  description: string | null
+  category: string
+  imagePath: string
+  price: number | null
+  status: 'available' | 'sold' | 'not_for_sale'
+  featured: boolean
+}
+
+export async function saveArtwork(
+  data: SaveArtworkInput
+): Promise<{ error?: string; success?: boolean }> {
   const supabase = await createClient()
   const {
     data: { user },
@@ -15,44 +24,21 @@ export async function uploadArtwork(
 
   if (!user) return { error: 'Not authenticated' }
 
-  const file = formData.get('image') as File | null
-  const title = (formData.get('title') as string)?.trim()
-  const description = (formData.get('description') as string)?.trim() || null
-  const category = (formData.get('category') as string)?.trim()
-  const forSale = formData.get('for_sale') === 'on'
-  const priceStr = formData.get('price') as string | null
-  const featured = formData.get('featured') === 'on'
+  if (!data.title.trim()) return { error: 'Title is required' }
+  if (!data.category) return { error: 'Category is required' }
+  if (!data.imagePath) return { error: 'Image is required' }
 
-  if (!file || file.size === 0) return { error: 'Please select an image' }
-  if (!title) return { error: 'Title is required' }
-  if (!category) return { error: 'Category is required' }
-
-  const ext = file.name.split('.').pop() || 'jpg'
-  const path = `${crypto.randomUUID()}.${ext}`
-
-  const { error: uploadError } = await supabase.storage
-    .from('artworks')
-    .upload(path, file, {
-      contentType: file.type,
-      upsert: false,
-    })
-
-  if (uploadError) return { error: `Upload failed: ${uploadError.message}` }
-
-  const { error: insertError } = await supabase.from('artworks').insert({
-    title,
-    description,
-    category,
-    image_path: path,
-    price: forSale && priceStr ? parseFloat(priceStr) : null,
-    status: forSale ? 'available' : 'not_for_sale',
-    featured,
+  const { error } = await supabase.from('artworks').insert({
+    title: data.title.trim(),
+    description: data.description?.trim() || null,
+    category: data.category,
+    image_path: data.imagePath,
+    price: data.price,
+    status: data.status,
+    featured: data.featured,
   })
 
-  if (insertError) {
-    await supabase.storage.from('artworks').remove([path])
-    return { error: `Database error: ${insertError.message}` }
-  }
+  if (error) return { error: `Database error: ${error.message}` }
 
   revalidatePath('/admin')
   revalidatePath('/work')

@@ -1,26 +1,19 @@
 'use client'
 
-import { useActionState, useEffect, useRef, useState } from 'react'
-import { uploadArtwork } from './actions'
+import { useEffect, useRef, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { saveArtwork } from './actions'
+
+type Status = 'idle' | 'uploading' | 'saving' | 'success' | 'error'
 
 export default function UploadForm() {
-  const [state, action, pending] = useActionState(uploadArtwork, undefined)
+  const [status, setStatus] = useState<Status>('idle')
+  const [errorMsg, setErrorMsg] = useState<string>('')
   const [forSale, setForSale] = useState(false)
   const [fileName, setFileName] = useState<string>('')
   const [preview, setPreview] = useState<string>('')
+  const [file, setFile] = useState<File | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
-
-  useEffect(() => {
-    if (state?.success && formRef.current) {
-      formRef.current.reset()
-      setForSale(false)
-      setFileName('')
-      setPreview((url) => {
-        if (url) URL.revokeObjectURL(url)
-        return ''
-      })
-    }
-  }, [state])
 
   useEffect(() => {
     return () => {
@@ -28,8 +21,86 @@ export default function UploadForm() {
     }
   }, [preview])
 
+  function resetForm() {
+    formRef.current?.reset()
+    setForSale(false)
+    setFileName('')
+    setFile(null)
+    setPreview((url) => {
+      if (url) URL.revokeObjectURL(url)
+      return ''
+    })
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setErrorMsg('')
+
+    if (!file) {
+      setErrorMsg('Please select an image')
+      setStatus('error')
+      return
+    }
+
+    const formData = new FormData(e.currentTarget)
+    const title = (formData.get('title') as string).trim()
+    const description = (formData.get('description') as string).trim() || null
+    const category = formData.get('category') as string
+    const featured = formData.get('featured') === 'on'
+    const priceStr = formData.get('price') as string | null
+
+    const supabase = createClient()
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+    const imagePath = `${crypto.randomUUID()}.${ext}`
+
+    setStatus('uploading')
+
+    const { error: uploadError } = await supabase.storage
+      .from('artworks')
+      .upload(imagePath, file, {
+        contentType: file.type,
+        upsert: false,
+      })
+
+    if (uploadError) {
+      setErrorMsg(`Upload failed: ${uploadError.message}`)
+      setStatus('error')
+      return
+    }
+
+    setStatus('saving')
+
+    const result = await saveArtwork({
+      title,
+      description,
+      category,
+      imagePath,
+      price: forSale && priceStr ? parseFloat(priceStr) : null,
+      status: forSale ? 'available' : 'not_for_sale',
+      featured,
+    })
+
+    if (result.error) {
+      await supabase.storage.from('artworks').remove([imagePath])
+      setErrorMsg(result.error)
+      setStatus('error')
+      return
+    }
+
+    setStatus('success')
+    resetForm()
+  }
+
+  const pending = status === 'uploading' || status === 'saving'
+  const buttonLabel =
+    status === 'uploading'
+      ? 'Uploading…'
+      : status === 'saving'
+      ? 'Saving…'
+      : 'Publish'
+
   return (
-    <form ref={formRef} action={action} className="space-y-5">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
       <label className="block cursor-pointer border border-dashed border-white/20 hover:border-white/40 transition-colors text-center overflow-hidden">
         <input
           name="image"
@@ -38,16 +109,17 @@ export default function UploadForm() {
           required
           className="hidden"
           onChange={(e) => {
-            const file = e.target.files?.[0]
-            setFileName(file?.name ?? '')
+            const f = e.target.files?.[0] ?? null
+            setFile(f)
+            setFileName(f?.name ?? '')
             setPreview((prev) => {
               if (prev) URL.revokeObjectURL(prev)
-              return file ? URL.createObjectURL(file) : ''
+              return f ? URL.createObjectURL(f) : ''
             })
           }}
         />
         {preview ? (
-          <div className="relative">
+          <div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={preview}
@@ -56,7 +128,7 @@ export default function UploadForm() {
             />
             <div className="py-3 px-4 border-t border-white/10 text-left">
               <span className="text-white/60 text-xs tracking-[0.2em] uppercase truncate block">
-                {fileName} · Click to replace
+                {fileName} · {file ? `${(file.size / 1024 / 1024).toFixed(1)} MB · ` : ''}Click to replace
               </span>
             </div>
           </div>
@@ -126,15 +198,19 @@ export default function UploadForm() {
         />
       )}
 
-      {state?.error && <p className="text-red-400/80 text-xs">{state.error}</p>}
-      {state?.success && <p className="text-emerald-400/80 text-xs">Uploaded.</p>}
+      {status === 'error' && errorMsg && (
+        <p className="text-red-400/80 text-xs">{errorMsg}</p>
+      )}
+      {status === 'success' && (
+        <p className="text-emerald-400/80 text-xs">Uploaded.</p>
+      )}
 
       <button
         type="submit"
         disabled={pending}
         className="w-full bg-white text-black py-3 text-xs tracking-[0.25em] uppercase font-medium hover:bg-white/90 disabled:opacity-50 transition-opacity"
       >
-        {pending ? 'Uploading…' : 'Publish'}
+        {buttonLabel}
       </button>
     </form>
   )
