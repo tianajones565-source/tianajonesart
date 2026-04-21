@@ -45,7 +45,7 @@ export default function ArtworkList({ artworks }: { artworks: Artwork[] }) {
                 {art.price !== null && ` · $${art.price}`}
                 {art.status === 'sold' && ' · Sold'}
                 {art.status === 'not_for_sale' && ' · Not for sale'}
-                {art.featured && ' · Featured'}
+                {art.featured && ' · Hero'}
               </p>
             </div>
 
@@ -66,7 +66,7 @@ export default function ArtworkList({ artworks }: { artworks: Artwork[] }) {
               )}
               <form action={toggleFeatured.bind(null, art.id, !art.featured)}>
                 <button className="text-white/60 text-[10px] tracking-[0.15em] uppercase hover:text-white transition-colors">
-                  {art.featured ? 'Unfeature' : 'Feature'}
+                  {art.featured ? 'Remove Hero' : 'Make Hero'}
                 </button>
               </form>
               <form action={deleteArtwork.bind(null, art.id)}>

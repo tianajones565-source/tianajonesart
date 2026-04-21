@@ -182,7 +182,7 @@ export default function UploadForm() {
 
         <label className="flex items-center gap-2 cursor-pointer">
           <input name="featured" type="checkbox" className="accent-white" />
-          <span className="text-white/70 text-xs tracking-[0.2em] uppercase">Feature on home</span>
+          <span className="text-white/70 text-xs tracking-[0.2em] uppercase">Make Hero</span>
         </label>
       </div>
 
