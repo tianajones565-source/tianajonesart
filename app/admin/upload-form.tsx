@@ -7,6 +7,7 @@ export default function UploadForm() {
   const [state, action, pending] = useActionState(uploadArtwork, undefined)
   const [forSale, setForSale] = useState(false)
   const [fileName, setFileName] = useState<string>('')
+  const [preview, setPreview] = useState<string>('')
   const formRef = useRef<HTMLFormElement>(null)
 
   useEffect(() => {
@@ -14,23 +15,58 @@ export default function UploadForm() {
       formRef.current.reset()
       setForSale(false)
       setFileName('')
+      setPreview((url) => {
+        if (url) URL.revokeObjectURL(url)
+        return ''
+      })
     }
   }, [state])
 
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview)
+    }
+  }, [preview])
+
   return (
     <form ref={formRef} action={action} className="space-y-5">
-      <label className="block cursor-pointer border border-dashed border-white/20 hover:border-white/40 transition-colors py-12 px-6 text-center">
+      <label className="block cursor-pointer border border-dashed border-white/20 hover:border-white/40 transition-colors text-center overflow-hidden">
         <input
           name="image"
           type="file"
           accept="image/*"
           required
           className="hidden"
-          onChange={(e) => setFileName(e.target.files?.[0]?.name ?? '')}
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            setFileName(file?.name ?? '')
+            setPreview((prev) => {
+              if (prev) URL.revokeObjectURL(prev)
+              return file ? URL.createObjectURL(file) : ''
+            })
+          }}
         />
-        <span className="text-white/60 text-xs tracking-[0.2em] uppercase">
-          {fileName || 'Click to select image'}
-        </span>
+        {preview ? (
+          <div className="relative">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={preview}
+              alt="Preview"
+              className="w-full max-h-80 object-contain bg-black"
+            />
+            <div className="py-3 px-4 border-t border-white/10 text-left">
+              <span className="text-white/60 text-xs tracking-[0.2em] uppercase truncate block">
+                {fileName} · Click to replace
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="py-12 px-6">
+            <span className="text-white/60 text-xs tracking-[0.2em] uppercase">
+              Click to select image
+            </span>
+          </div>
+        )}
       </label>
 
       <input
