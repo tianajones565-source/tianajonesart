@@ -4,6 +4,13 @@ import { useState } from 'react'
 import { updateSettings } from '../actions'
 import type { SiteSettings } from '@/lib/settings'
 
+function linesToArray(text: string): string[] {
+  return text
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
 export default function SettingsForm({ initial }: { initial: SiteSettings }) {
   const [bio, setBio] = useState(initial.bio.markdown)
   const [email, setEmail] = useState(initial.contact.email)
@@ -15,6 +22,13 @@ export default function SettingsForm({ initial }: { initial: SiteSettings }) {
   const [fadeSec, setFadeSec] = useState(
     Math.round(initial.slideshow.fade_ms / 100) / 10
   )
+  const [cxIntro, setCxIntro] = useState(initial.commissions.intro)
+  const [cxHowHeading, setCxHowHeading] = useState(initial.commissions.how_heading)
+  const [cxHowSteps, setCxHowSteps] = useState(initial.commissions.how_steps.join('\n'))
+  const [cxNoteHeading, setCxNoteHeading] = useState(initial.commissions.note_heading)
+  const [cxNoteItems, setCxNoteItems] = useState(initial.commissions.note_items.join('\n'))
+  const [cxAckText, setCxAckText] = useState(initial.commissions.ack_text)
+
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ error?: string; success?: boolean }>({})
 
@@ -29,6 +43,14 @@ export default function SettingsForm({ initial }: { initial: SiteSettings }) {
       slideshow: {
         interval_ms: Math.round(intervalSec * 1000),
         fade_ms: Math.round(fadeSec * 1000),
+      },
+      commissions: {
+        intro: cxIntro,
+        how_heading: cxHowHeading,
+        how_steps: linesToArray(cxHowSteps),
+        note_heading: cxNoteHeading,
+        note_items: linesToArray(cxNoteItems),
+        ack_text: cxAckText,
       },
     })
 
@@ -126,6 +148,76 @@ export default function SettingsForm({ initial }: { initial: SiteSettings }) {
               value={fadeSec}
               onChange={(e) => setFadeSec(parseFloat(e.target.value))}
               className="w-full accent-white"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className={sectionClass}>
+        <h2 className={sectionHeader}>Commissions page</h2>
+        <div className="space-y-6">
+          <div>
+            <label className={labelClass}>Intro paragraph</label>
+            <textarea
+              value={cxIntro}
+              onChange={(e) => setCxIntro(e.target.value)}
+              rows={3}
+              className={textareaClass}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>&ldquo;How it works&rdquo; heading</label>
+            <input
+              type="text"
+              value={cxHowHeading}
+              onChange={(e) => setCxHowHeading(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>&ldquo;How it works&rdquo; steps</label>
+            <textarea
+              value={cxHowSteps}
+              onChange={(e) => setCxHowSteps(e.target.value)}
+              rows={6}
+              placeholder="One step per line"
+              className={textareaClass}
+            />
+            <p className="text-white/30 text-[10px] mt-2">One step per line — numbered automatically.</p>
+          </div>
+
+          <div>
+            <label className={labelClass}>&ldquo;Please note&rdquo; heading</label>
+            <input
+              type="text"
+              value={cxNoteHeading}
+              onChange={(e) => setCxNoteHeading(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>&ldquo;Please note&rdquo; items</label>
+            <textarea
+              value={cxNoteItems}
+              onChange={(e) => setCxNoteItems(e.target.value)}
+              rows={5}
+              placeholder="One item per line"
+              className={textareaClass}
+            />
+            <p className="text-amber-400/70 text-[10px] mt-2">
+              These items also act as scam deterrents. Keep the no-checks and no-overpayment
+              language unless you&rsquo;re sure you want to change it.
+            </p>
+          </div>
+
+          <div>
+            <label className={labelClass}>Acknowledgment checkbox text</label>
+            <textarea
+              value={cxAckText}
+              onChange={(e) => setCxAckText(e.target.value)}
+              rows={3}
+              className={textareaClass}
             />
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { getCategories } from '@/lib/categories'
 import EditForm from './edit-form'
 
 export default async function EditArtworkPage({
@@ -11,11 +12,10 @@ export default async function EditArtworkPage({
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: artwork } = await supabase
-    .from('artworks')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const [{ data: artwork }, categories] = await Promise.all([
+    supabase.from('artworks').select('*').eq('id', id).single(),
+    getCategories(),
+  ])
 
   if (!artwork) notFound()
 
@@ -35,7 +35,7 @@ export default async function EditArtworkPage({
         <p className="text-white/40 text-xs tracking-[0.2em] uppercase mt-1">{artwork.title}</p>
       </div>
 
-      <EditForm artwork={artwork} imageUrl={imageUrl} />
+      <EditForm artwork={artwork} imageUrl={imageUrl} categories={categories} />
     </main>
   )
 }

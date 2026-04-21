@@ -180,6 +180,14 @@ type SettingsInput = {
   bio: { markdown: string }
   contact: { email: string; instagram: string; note: string }
   slideshow: { interval_ms: number; fade_ms: number }
+  commissions: {
+    intro: string
+    how_heading: string
+    how_steps: string[]
+    note_heading: string
+    note_items: string[]
+    ack_text: string
+  }
 }
 
 export async function updateSettings(
@@ -195,6 +203,7 @@ export async function updateSettings(
     { key: 'bio', value: data.bio },
     { key: 'contact', value: data.contact },
     { key: 'slideshow', value: data.slideshow },
+    { key: 'commissions', value: data.commissions },
   ]
 
   const { error } = await supabase

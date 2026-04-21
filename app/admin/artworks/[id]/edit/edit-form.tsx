@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import type { Category } from '@/lib/categories'
 import { updateArtwork } from '../../../actions'
 import HeroCropper, { type HeroCrop } from './hero-cropper'
 
@@ -20,9 +21,11 @@ type Artwork = {
 export default function EditForm({
   artwork,
   imageUrl,
+  categories,
 }: {
   artwork: Artwork
   imageUrl: string
+  categories: Category[]
 }) {
   const router = useRouter()
   const [title, setTitle] = useState(artwork.title)
@@ -89,9 +92,16 @@ export default function EditForm({
         required
         className="w-full bg-transparent border-b border-white/20 focus:border-white/60 outline-none py-3 text-white text-sm transition-colors"
       >
-        <option value="painting" className="bg-[#0a0a0a]">Painting</option>
-        <option value="digital" className="bg-[#0a0a0a]">Digital</option>
-        <option value="school" className="bg-[#0a0a0a]">School Work</option>
+        {!categories.some((c) => c.slug === category) && (
+          <option value={category} className="bg-[#0a0a0a]">
+            {category} (missing)
+          </option>
+        )}
+        {categories.map((c) => (
+          <option key={c.id} value={c.slug} className="bg-[#0a0a0a]">
+            {c.label}
+          </option>
+        ))}
       </select>
 
       <div>

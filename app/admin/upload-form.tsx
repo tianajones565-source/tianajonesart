@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import type { Category } from '@/lib/categories'
 import { saveArtwork } from './actions'
 
 type Status = 'idle' | 'uploading' | 'saving' | 'success' | 'error'
 
-export default function UploadForm() {
+export default function UploadForm({ categories }: { categories: Category[] }) {
   const [status, setStatus] = useState<Status>('idle')
   const [errorMsg, setErrorMsg] = useState<string>('')
   const [forSale, setForSale] = useState(false)
@@ -163,9 +164,11 @@ export default function UploadForm() {
         className="w-full bg-transparent border-b border-white/20 focus:border-white/60 outline-none py-3 text-white text-sm transition-colors"
       >
         <option value="" disabled className="bg-[#0a0a0a]">Category</option>
-        <option value="painting" className="bg-[#0a0a0a]">Painting</option>
-        <option value="digital" className="bg-[#0a0a0a]">Digital</option>
-        <option value="school" className="bg-[#0a0a0a]">School Work</option>
+        {categories.map((c) => (
+          <option key={c.id} value={c.slug} className="bg-[#0a0a0a]">
+            {c.label}
+          </option>
+        ))}
       </select>
 
       <div className="flex items-center gap-6 pt-2">

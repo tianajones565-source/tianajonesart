@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { submitCommission } from './actions'
 
-export default function CommissionForm() {
+export default function CommissionForm({ ackText }: { ackText: string }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [country, setCountry] = useState('')
@@ -155,10 +155,8 @@ export default function CommissionForm() {
           required
           className="mt-1 accent-white"
         />
-        <span className="text-white/70 text-xs leading-relaxed">
-          I&rsquo;ve read the commission terms above. I understand payment is via Stripe
-          (no checks or money orders), there is no overpayment or third-party shipping,
-          and work begins after the deposit clears.
+        <span className="text-white/70 text-xs leading-relaxed whitespace-pre-line">
+          {ackText}
         </span>
       </label>
 
